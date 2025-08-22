@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抽签测运势</title>
+<style>
+    body {
+        font-family: "Microsoft YaHei", sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        overflow-x: hidden;
+    }
+
+    h1 {
+        margin: 20px 0 10px;
+        font-size: 28px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    button {
+        background: linear-gradient(45deg, #ff9966, #ff5e62);
+        color: #fff;
+        font-size: 18px;
+        padding: 12px 28px;
+        border: none;
+        border-radius: 30px;
+        margin: 10px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.3s;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+    button:active {
+        transform: scale(0.96);
+    }
+
+    .card {
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(8px);
+        border-radius: 18px;
+        padding: 18px;
+        margin: 12px;
+        width: 85%;
+        max-width: 400px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        text-align: left;
+        animation: fadeIn 0.8s ease;
+    }
+
+    .card h3 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .card p {
+        margin: 4px 0 0;
+        font-size: 15px;
+        line-height: 1.4em;
+    }
+
+    .loading {
+        font-size: 22px;
+        margin: 20px;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px);}
+        to   { opacity: 1; transform: translateY(0);}
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    footer {
+        margin-top: auto;
+        padding: 12px;
+        font-size: 12px;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+    <h1>🔮 抽签测运势</h1>
+    <button onclick="startDraw()">✨ 点击抽签 ✨</button>
+    <div id="result"></div>
+    <footer>今日签，仅供娱乐参考 😄</footer>
+
+<script>
+const categories = ["财运", "桃花", "学业", "生命"];
+const levels = [
+    {name:"大吉", weight:15, icon:"🌟"},
+    {name:"吉", weight:30, icon:"✨"},
+    {name:"中平", weight:25, icon:"🟡"},
+    {name:"小凶", weight:20, icon:"⚠️"},
+    {name:"大凶", weight:10, icon:"⛔"}
+];
+
+const advice = {
+    "财运": {
+        "大吉": ["手气在线，宜抓小机会。","正财顺畅，偏财点到为止。"],
+        "吉": ["收入稳步，适合学习理财。"],
+        "中平": ["平常心对待账目，稳为先。"],
+        "小凶": ["谨防冲动消费，大额支出需确认。"],
+        "大凶": ["暂停高风险投资，现金为王。"]
+    },
+    "桃花": {
+        "大吉": ["魅力值拉满，主动出击。","宜约会/社交。"],
+        "吉": ["社交氛围良好，适合扩列。"],
+        "中平": ["保持自然，不卑不亢。"],
+        "小凶": ["沟通易误解，降低期望值。"],
+        "大凶": ["休息一下，把注意力放回自己。"]
+    },
+    "学业": {
+        "大吉": ["灵感与效率齐飞，适合攻坚。"],
+        "吉": ["状态稳，按计划推进即可。"],
+        "中平": ["注意专注力管理，先做重点。"],
+        "小凶": ["容易分心，先关掉干扰源。"],
+        "大凶": ["别硬熬，先休息再动手。"]
+    },
+    "生命": {
+        "大吉": ["气血充足，宜运动拉伸。"],
+        "吉": ["身体状态良好，保持节律即可。"],
+        "中平": ["注意肩颈/腰背，做个活动。"],
+        "小凶": ["少熬夜少糖油，及时就医。"],
+        "大凶": ["以休息为先，推掉非必要社交。"]
+    }
+};
+
+const yiList = ["早睡早起","整理房间","学习打卡","晒太阳15分钟","写总结与计划","外出散步","轻食清淡","致电家人","备份重要文件"];
+const jiList = ["情绪化消费","深夜刷屏","酒后决策","过量咖啡因","盲目比较","纠缠旧事"];
+
+function weightedRandom(arr) {
+    let total = arr.reduce((sum, obj) => sum + obj.weight, 0);
+    let r = Math.random() * total;
+    for (let obj of arr) {
+        if (r < obj.weight) return obj;
+        r -= obj.weight;
+    }
+    return arr[arr.length-1];
+}
+
+function startDraw(){
+    let resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = `<div class="loading">🎲 摇签中，请稍候...</div>`;
+    setTimeout(drawFortune, 1500); // 1.5秒后显示结果
+}
+
+function drawFortune() {
+    let resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "";
+
+    categories.forEach(cat => {
+        let level = weightedRandom(levels);
+        let adv = advice[cat][level.name];
+        let advText = adv[Math.floor(Math.random()*adv.length)];
+        let card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<h3>${level.icon} ${cat}：${level.name}</h3>
+                          <p>建议：${advText}</p>`;
+        resultDiv.appendChild(card);
+    });
+
+    // 今日宜忌卡片
+    let yiPick = yiList.sort(() => 0.5 - Math.random()).slice(0,3);
+    let jiPick = jiList.sort(() => 0.5 - Math.random()).slice(0,2);
+    let dailyCard = document.createElement("div");
+    dailyCard.className = "card";
+    dailyCard.innerHTML = `<h3>📜 今日宜忌</h3>
+                           <p>✅ 宜：${yiPick.join("，")}</p>
+                           <p>🚫 忌：${jiPick.join("，")}</p>`;
+    resultDiv.appendChild(dailyCard);
+}
+</script>
+</body>
+</html>
